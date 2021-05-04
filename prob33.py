@@ -2,22 +2,34 @@ import fractions
 from fractions import Fraction
 
 
-def helper(m, count, offset, probs):
+def check_is_terminal(offset, row):
+    """
+    A row is terminal if:
+    - it is zero, OR
+    - it only flows into itself.
+
+    Therefore, a row is terminal if every value that is not self-flow is zero.
+    """
+    return all((x == 0) for x in row[:offset]) and all((x == 0) for x in row[offset + 1:])
+
+
+def helper(m, terminals, count, offset, probs):
     # Note that m :: node -> neighbor -> flow from node to neighbor
 
     # Helper, because there's lots of possible early-return points
     def recurse():
-        helper(m, count - 1, offset + 1, probs)
+        helper(m, terminals, count - 1, offset + 1, probs)
 
     row = m[offset]
 
     # Base case. Nothing to be done, since outputs[offset] = the end result.
     if count == 1:
-        # If this is a "fake" terminal (i.e. nonzero before offset) then mark output as None
-        has_nonzero = any((x != 0 for x in row))
-        if has_nonzero:
+        if not check_is_terminal(offset, row):
             probs[offset] = None
         return
+
+    if check_is_terminal(offset, row):
+        return recurse()
 
     # If it only self-loops, then this is a terminal node.
     self_flow = row[offset]
@@ -26,20 +38,11 @@ def helper(m, count, offset, probs):
 
     # Normalize flows by removing self-loop, and check if this is a terminal state.
     factor = 1 / (1 - self_flow)
-    is_terminal = True
     for i in range(count):
         oi = offset + i
         value = row[oi]
         if value != 0:
-            is_terminal = False
             row[oi] = factor * value
-
-    if is_terminal:
-        # If this is a "fake" terminal (i.e. nonzero before offset) then mark output as None
-        has_nonzero = any((x != 0 for x in row))
-        if has_nonzero:
-            probs[offset] = None
-        return recurse()
 
     # Move this row's probability and flows to other rows.
     prob = probs[offset]
@@ -74,12 +77,12 @@ def normalize_denominator(fs):
 
 def solution(m):
     count = len(m)
-    if count == 1:  # Trivial case
-        return [1, 1]
 
     # Initialize output matrix
     probabilities = [0] * count
     probabilities[0] = 1
+
+    terminals = [check_is_terminal(i, row) for i, row in enumerate(m)]
 
     # Fraction-ize the matrix
     for row in m:
@@ -90,7 +93,7 @@ def solution(m):
             row[i] = Fraction(row[i], denominator)
 
     # Run tail-recursive helper
-    helper(m, count, 0, probabilities)
+    helper(m, terminals, count, 0, probabilities)
 
     # Get output in the format wanted
     terminals = filter(lambda x: x is not None, probabilities)
@@ -206,7 +209,7 @@ if __name__ == '__main__':
 
     import copy
 
-    for i in range(100):
+    for i in range(10000):
         m = generate_matrix(random.randint(1, 10))
         terms = 0
         for i, row in enumerate(m):
