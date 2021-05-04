@@ -13,53 +13,6 @@ def check_is_terminal(offset, row):
     return all((x == 0) for x in row[:offset]) and all((x == 0) for x in row[offset + 1:])
 
 
-def helper(m, terminals, count, offset, probs):
-    # Note that m :: node -> neighbor -> flow from node to neighbor
-
-    # Helper, because there's lots of possible early-return points
-    def recurse():
-        helper(m, terminals, count - 1, offset + 1, probs)
-
-    row = m[offset]
-
-    # Base case. Nothing to be done, since outputs[offset] = the end result.
-    if count == 1:
-        if not check_is_terminal(offset, row):
-            probs[offset] = None
-        return
-
-    if check_is_terminal(offset, row):
-        return recurse()
-
-    # If it only self-loops, then this is a terminal node.
-    self_flow = row[offset]
-    if self_flow == 1:
-        return recurse()
-
-    # Normalize flows by removing self-loop, and check if this is a terminal state.
-    factor = 1 / (1 - self_flow)
-    for i in range(count):
-        oi = offset + i
-        value = row[oi]
-        if value != 0:
-            row[oi] = factor * value
-
-    # Move this row's probability and flows to other rows.
-    prob = probs[offset]
-    probs[offset] = None  # Signal that this is a non-terminal row
-    for i in range(1, count):
-        oi = offset + i
-        flow = row[oi]
-        probs[oi] += flow * prob  # Move this state's probability to the other state's probability
-
-        # Propagate every flow from other nodes through this node.
-        for j in range(1, count):
-            oj = offset + j
-            m[oj][oi] += m[oj][offset] * flow  # Move this row's flow to other row's flows
-
-    return recurse()
-
-
 def normalize_denominator(fs):
     if len(fs) == 1:
         return [fs[0].numerator, fs[0].denominator]
@@ -78,26 +31,59 @@ def normalize_denominator(fs):
 def solution(m):
     count = len(m)
 
-    # Initialize output matrix
-    probabilities = [0] * count
-    probabilities[0] = 1
-
-    terminals = [check_is_terminal(i, row) for i, row in enumerate(m)]
-
     # Fraction-ize the matrix
-    for row in m:
+    for i, row in enumerate(m):
         denominator = sum(row)
+
+        # This row is full of 0s. Convert it into a proper markov row.
         if denominator == 0:
+            row[i] = 1
             continue
-        for i in range(len(row)):
-            row[i] = Fraction(row[i], denominator)
 
-    # Run tail-recursive helper
-    helper(m, terminals, count, 0, probabilities)
+        # This row is nonzero. Convert everything into fractions.
+        for j in range(len(row)):
+            row[j] = Fraction(row[j], denominator)
 
-    # Get output in the format wanted
-    terminals = filter(lambda x: x is not None, probabilities)
+    # Find terminal and transient states
+    is_terminal = [check_is_terminal(i, row) for i, row in enumerate(m)]
+    absorbing_is = [i for i in range(count) if is_terminal[i]]
+    transient_is = [i for i in range(count) if not is_terminal[i]]
 
+    # Initialize output matrix
+    probs = [0] * count
+    probs[0] = 1
+
+    for node_i in transient_is:
+        node_row = m[node_i]
+
+        # This node may flow into itself. Normalize flows by removing self-loop.
+        self_flow = node_row[node_i]
+        if self_flow > 0:
+            node_row[node_i] = 0
+            norm_factor = 1 / (1 - self_flow)
+            for i in range(count):
+                node_row[i] *= norm_factor
+
+        # Propagate probability from this node to other nodes.
+        prob = probs[node_i]
+        probs[node_i] = 0  # Null this row's probability
+        for j in range(count):
+            probs[j] += node_row[j] * prob
+
+        # Add the outer product between column and row. Because the column represents ingress, and the row
+        # represents egress, column * row = net effect, or the total propogation from others through this node.
+        for j in range(count):
+            for k in range(count):
+                outer_product = m[j][node_i] * m[node_i][k]
+                m[j][k] += outer_product
+
+        # Null this row and column.
+        for j in range(count):
+            m[node_i][j] = 0
+            m[j][node_i] = 0
+
+    # Gather probabilities of absorbing states
+    terminals = [probs[i] for i in absorbing_is]
     out = normalize_denominator(terminals)
 
     return out
@@ -125,6 +111,17 @@ def generate_matrix(s):
 
 
 def regular_tests():
+    m0 = [
+        [0, 1, 0, 0, 0, 1],  # s0, the initial state, goes to s1 and s5 with equal probability
+        [4, 0, 0, 3, 2, 0],  # s1 can become s0, s3, or s4, but with different probabilities
+        [0, 0, 0, 0, 0, 0],  # s2 is terminal, and unreachable (never observed in practice)
+        [0, 0, 0, 0, 0, 0],  # s3 is terminal
+        [0, 0, 0, 0, 0, 0],  # s4 is terminal
+        [0, 0, 0, 0, 0, 0],  # s5 is terminal
+    ]
+    sol1 = solution(m0)
+    assert sol1 == [0, 3, 2, 9, 14]
+
     assert solution([
         [0, 0],
         [0, 24]
@@ -167,17 +164,6 @@ def regular_tests():
     ]) == [1, 0, 0, 1]
 
     assert solution([[3]]) == [1, 1]
-
-    m0 = [
-        [0, 1, 0, 0, 0, 1],  # s0, the initial state, goes to s1 and s5 with equal probability
-        [4, 0, 0, 3, 2, 0],  # s1 can become s0, s3, or s4, but with different probabilities
-        [0, 0, 0, 0, 0, 0],  # s2 is terminal, and unreachable (never observed in practice)
-        [0, 0, 0, 0, 0, 0],  # s3 is terminal
-        [0, 0, 0, 0, 0, 0],  # s4 is terminal
-        [0, 0, 0, 0, 0, 0],  # s5 is terminal
-    ]
-    sol1 = solution(m0)
-    assert sol1 == [0, 3, 2, 9, 14]
 
     assert solution([
         [0, 2, 1, 0, 0],
