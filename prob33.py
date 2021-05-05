@@ -1,5 +1,4 @@
-import fractions
-from fractions import Fraction
+from fractions import Fraction, gcd
 
 
 def check_is_terminal(offset, row):
@@ -21,7 +20,7 @@ def normalize_denominator(fs):
 
     for i in range(1, len(fs)):
         other = fs[i].denominator
-        common = common * other / fractions.gcd(common, other)
+        common = common * other / gcd(common, other)
 
     outputs = [f.numerator * common / f.denominator for f in fs]
     outputs.append(common)
@@ -29,15 +28,25 @@ def normalize_denominator(fs):
 
 
 def solution(m):
+    """
+    This solution is based on the idea of successively removing transient nodes from the Markov chain, but preserving
+    flows between the other nodes of the Markov chain. For example, if we have the following edges:
+    - A -> B with probability 1/3
+    - B -> C with probability 1/3
+    - B -> D with probability 1/3
+    we can remove node B, and replace it with the following two edges:
+    - A -> C with probability 1/3 * 1/3 = 1/9
+    - A -> D with probability 1/3 * 1/3 = 1/9
+    """
     count = len(m)
 
     # Fraction-ize the matrix
-    for i, row in enumerate(m):
+    for j, row in enumerate(m):
         denominator = sum(row)
 
         # This row is full of 0s. Convert it into a proper markov row.
         if denominator == 0:
-            row[i] = 1
+            row[j] = 1
             continue
 
         # This row is nonzero. Convert everything into fractions.
@@ -45,15 +54,20 @@ def solution(m):
             row[j] = Fraction(row[j], denominator)
 
     # Find terminal and transient states
-    is_terminal = [check_is_terminal(i, row) for i, row in enumerate(m)]
-    absorbing_is = [i for i in range(count) if is_terminal[i]]
-    transient_is = [i for i in range(count) if not is_terminal[i]]
+    is_terminal = [check_is_terminal(j, row) for j, row in enumerate(m)]
+    absorbing_is = [j for j in range(count) if is_terminal[j]]
+    transient_is = [j for j in range(count) if not is_terminal[j]]
 
     # Initialize output matrix
     probs = [0] * count
     probs[0] = 1
 
+    # A set of nodes we've visited, to improve performance. This is needed because transient nodes aren't always
+    # contiguous rows.
+    visited = set()
+
     for node_i in transient_is:
+        visited.add(node_i)
         node_row = m[node_i]
 
         # This node may flow into itself. Normalize flows by removing self-loop.
@@ -61,29 +75,34 @@ def solution(m):
         if self_flow > 0:
             node_row[node_i] = 0
             norm_factor = 1 / (1 - self_flow)
-            for i in range(count):
-                node_row[i] *= norm_factor
+            for j in range(count):
+                if j in visited:
+                    continue
+                node_row[j] *= norm_factor
 
         # Propagate probability from this node to other nodes.
         prob = probs[node_i]
         probs[node_i] = 0  # Null this row's probability
         for j in range(count):
+            if j in visited:
+                continue
             probs[j] += node_row[j] * prob
 
-        # Add the outer product between column and row. Because the column represents ingress, and the row
-        # represents egress, column * row = net effect, or the total propogation from others through this node.
+        # Because the column represents ingress, and the row represents egress, the value of column * row = net effect,
+        # or the total propogation from others through this node. Overlaying this product on our matrix results in
+        # gives us, essentially, what the matrix would look like if this node was removed but we preserved the net
+        # flow between nodes.
         for j in range(count):
+            if j in visited:
+                continue
             for k in range(count):
+                if k in visited:
+                    continue
                 outer_product = m[j][node_i] * m[node_i][k]
                 m[j][k] += outer_product
 
-        # Null this row and column.
-        for j in range(count):
-            m[node_i][j] = 0
-            m[j][node_i] = 0
-
     # Gather probabilities of absorbing states
-    terminals = [probs[i] for i in absorbing_is]
+    terminals = [probs[j] for j in absorbing_is]
     out = normalize_denominator(terminals)
 
     return out
