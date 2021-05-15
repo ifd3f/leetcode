@@ -1,6 +1,21 @@
 import unittest
+from copy import deepcopy
 
 from distract_the_trainers import is_infinite_cycle, solution, Graph, augment
+
+
+def generate_simple_blossom_graph():
+    graph = Graph()
+    graph.add_edge_tup((1, 2))
+    graph.add_edge_tup((2, 3))
+    graph.add_edge_tup((2, 6))
+    graph.add_edge_tup((3, 4))
+    graph.add_edge_tup((4, 5))
+    graph.add_edge_tup((5, 6))
+    graph.add_edge_tup((5, 7))
+    graph.add_edge_tup((7, 8))
+    graph.add_edge_tup((8, 9))
+    return graph
 
 
 class TestGraph(unittest.TestCase):
@@ -16,6 +31,18 @@ class TestGraph(unittest.TestCase):
         path = graph.find_augmenting_path(matching)
 
         self.assertIn(path, [[1, 2, 3, 4], [4, 3, 2, 1]])
+
+    def test_deepcopy(self):
+        graph = Graph()
+        graph.add_edge_tup((1, 2))
+        graph.add_edge_tup((3, 4))
+        graph.add_edge_tup((3, 2))
+
+        graph_copy = deepcopy(graph)
+        graph_copy.add_edge_tup((5, 2))
+
+        self.assertIn((2, 5), graph_copy.edges())
+        self.assertNotIn((2, 5), graph.edges())
 
     def test_blossom_1(self):
         graph = Graph()
@@ -61,6 +88,42 @@ class TestGraph(unittest.TestCase):
         matching = graph.maximum_matching()
 
         self.assertEqual(5, matching.edge_count())
+
+    def test_icp_ideal(self):
+        graph = generate_simple_blossom_graph()
+        path = [0, 1, 2, 7]
+        cycle = [2, 3, 4, 5, 6]
+
+        intra_cycle = graph.get_intra_cycle_path(path, cycle, 2)
+
+        self.assertEqual([2, 6, 5], intra_cycle)
+
+    def test_icp_cycle_rotation(self):
+        graph = generate_simple_blossom_graph()
+        path = [0, 1, 2, 7]
+        cycle = [5, 6, 2, 3, 4]
+
+        intra_cycle = graph.get_intra_cycle_path(path, cycle, 2)
+
+        self.assertEqual([2, 6, 5], intra_cycle)
+
+    def test_icp_contracted_as_root_1(self):
+        graph = generate_simple_blossom_graph()
+        path = [2, 7, 8, 9]
+        cycle = [2, 3, 4, 5, 6]
+
+        intra_cycle = graph.get_intra_cycle_path(path, cycle, 0)
+
+        self.assertEqual([2, 6, 5], intra_cycle)
+
+    def test_icp_contracted_as_root_2(self):
+        graph = generate_simple_blossom_graph()
+        path = [2, 7, 8, 9]
+        cycle = [3, 4, 5, 6, 2]
+
+        intra_cycle = graph.get_intra_cycle_path(path, cycle, 0)
+
+        self.assertEqual([3, 4, 5], intra_cycle)
 
     def test_count_bipartite_1(self):
         graph = Graph()

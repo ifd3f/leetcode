@@ -259,6 +259,12 @@ class Graph(object):
             return contracted_path
 
         # Otherwise, the contracted path goes through the contracted blossom.
+        intra_cycle = self.get_intra_cycle_path(contracted_path, full_cycle, i_v_b)
+
+        # Concatenate the paths!
+        return contracted_path[:i_v_b] + intra_cycle + contracted_path[i_v_b + 1:]
+
+    def get_intra_cycle_path(self, contracted_path, full_cycle, i_v_b):
         # If the path does not begin in the cycle, rotate the cycle so that element 0 is where the contracted
         # path enters the cycle. This makes life slightly easier later on.
         if i_v_b != 0:
@@ -279,9 +285,7 @@ class Graph(object):
             intra_cycle = full_cycle[i_cycle_exit:]
             intra_cycle.append(full_cycle[0])
             intra_cycle.reverse()
-
-        # Concatenate the paths!
-        return contracted_path[:i_v_b] + intra_cycle + contracted_path[i_v_b + 1:]
+        return intra_cycle
 
 
 def augment(path, matching):
