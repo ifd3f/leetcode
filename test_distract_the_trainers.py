@@ -4,7 +4,7 @@ from distract_the_trainers import is_infinite_cycle, solution, Graph, augment
 
 
 class TestGraph(unittest.TestCase):
-    def test_snake_4(self):
+    def test_snake(self):
         graph = Graph()
         graph.add_edge_tup((1, 2))
         graph.add_edge_tup((3, 4))
@@ -16,6 +16,31 @@ class TestGraph(unittest.TestCase):
         path = graph.find_augmenting_path(matching)
 
         self.assertIn(path, [[1, 2, 3, 4], [4, 3, 2, 1]])
+
+    def test_blossom_1(self):
+        graph = Graph()
+        graph.add_edge_tup((1, 4))
+        graph.add_edge_tup((2, 4))
+        graph.add_edge_tup((3, 5))
+        graph.add_edge_tup((4, 5))
+
+        matching = graph.maximum_matching()
+
+        self.assertEqual(2, matching.edge_count())
+
+    def test_blossom_2(self):
+        graph = Graph()
+        graph.add_edge_tup((1, 2))
+        graph.add_edge_tup((1, 3))
+        graph.add_edge_tup((2, 3))
+        graph.add_edge_tup((2, 4))
+        graph.add_edge_tup((3, 5))
+        graph.add_edge_tup((4, 5))
+        graph.add_edge_tup((4, 6))
+
+        matching = graph.maximum_matching()
+
+        self.assertEqual(3, matching.edge_count())
 
     def test_count_bipartite_1(self):
         graph = Graph()

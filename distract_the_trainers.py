@@ -10,7 +10,7 @@ def is_infinite_cycle(a, b):
     s = a + b
 
     # Checking for power 2 https://stackoverflow.com/questions/57025836/how-to-check-if-a-given-number-is-a-power-of-two
-    return (s & (s - 1) == 0) and s != 0
+    return not ((s & (s - 1) == 0) and s != 0)
 
 
 def mk_edge(a, b):
@@ -58,6 +58,9 @@ class Graph(object):
     def __init__(self):
         self.adjacency = defaultdict(set)
         self.is_even = defaultdict(lambda: None)
+
+    def __repr__(self):
+        return 'Graph(%s)' % (' '.join(map(repr, self.edges())),)
 
     def edges(self):
         es = set()
@@ -132,7 +135,6 @@ class Graph(object):
             if v in visited_nodes:
                 continue
             visited_nodes.add(v)
-            search_stack.extend(self.adjacency[v])
 
             # Skip v if it is not even
             if not forest.is_even(v):
@@ -144,6 +146,7 @@ class Graph(object):
                 edge = mk_edge(v, w)
                 if edge in visited_edges:
                     continue
+                search_stack.append(w)
                 visited_edges.add(edge)
 
                 x = matching.mate(w)
@@ -172,7 +175,6 @@ class Graph(object):
                     return path_v
 
                 # If v and w are the same tree: blossom detected.
-                # TODO blossom code
                 # graph2 = deepcopy(self)
                 # matching2 = contract stuff
                 # graph2.find_augmenting_path()
@@ -232,11 +234,6 @@ class Contraction(object):
             self.graph.add_edge_tup(edge)
 
 
-def find_maximum_matching(adjacency, matching):
-    p = find_augmenting_path(adjacency, matching)
-    pass
-
-
 def build_graph(xs):
     graph = Graph()
     for i, a in enumerate(xs):
@@ -249,8 +246,5 @@ def build_graph(xs):
 
 def solution(bananas):
     graph = build_graph(bananas)
-    print(graph.adjacency)
-
-    for i in range(len(bananas)):
-        for j in range(i):
-            pass
+    maximum_matching_count = graph.maximum_matching().edge_count()
+    return len(bananas) - maximum_matching_count
