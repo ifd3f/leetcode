@@ -1,4 +1,5 @@
 from collections import defaultdict
+from copy import deepcopy
 
 
 def is_infinite_cycle(a, b):
@@ -53,6 +54,34 @@ class Forest(object):
             yield x
             x = self.get_parent(x)
 
+    def get_path_from_child_to_parent(self, f, t):
+        path = []
+        while f != t:
+            if f is None:
+                return None
+            path.append(f)
+            f = self.get_parent(f)
+        path.append(t)
+        return path
+
+    def find_common_ancestor(self, a, b):
+        visited = set()
+        while True:
+            # No common ancestor
+            if a is None and b is None:
+                return None
+
+            if a is not None:
+                if a in visited:
+                    return a
+                visited.add(a)
+                a = self.get_parent(a)
+            if b is not None:
+                if b in visited:
+                    return b
+                visited.add(b)
+                b = self.get_parent(b)
+
 
 class Graph(object):
     def __init__(self):
@@ -91,6 +120,29 @@ class Graph(object):
         a, b = e
         self.adjacency[a].remove(b)
         self.adjacency[b].remove(a)
+
+    def rm_node(self, node):
+        # Remove references from others to this
+        for neighbor in self.adjacency[node]:
+            self.adjacency[neighbor].remove(node)
+        # Remove this node
+        del self.adjacency[node]
+
+    def contract(self, nodes, as_matching=False):
+        """Contracts the given list of nodes, and returns the new node it was contracted to."""
+        new_neighbors = set()
+        for node in nodes:
+            new_neighbors.union(self.adjacency[node])
+        new_neighbors.difference(nodes)
+
+        for node in nodes:
+            self.rm_node(node)
+
+        v_b = nodes[0]
+        for neighbor in new_neighbors:
+            self.add_edge_tup((v_b, neighbor))
+
+        return v_b
 
     def exposed_vertices(self, matching):
         for node, neighbors in self.adjacency.items():
@@ -169,19 +221,67 @@ class Graph(object):
 
                 # If v and w are different trees, we found an augmenting path.
                 if forest.get_root(v) != forest.get_root(w):
-                    path_v = list(forest.get_path_to_root(v))
-                    path_v.reverse()
-                    path_v.extend(forest.get_path_to_root(w))
-                    return path_v
+                    path = list(forest.get_path_to_root(v))
+                    path.reverse()
+                    path.extend(forest.get_path_to_root(w))
+                    return path
 
-                # If v and w are the same tree: blossom detected.
-                # graph2 = deepcopy(self)
-                # matching2 = contract stuff
-                # graph2.find_augmenting_path()
-                assert False, "Blossom NYI"
+                # If v and w are the same tree: blossom detected. Find the nodes of this cycle.
+                ancestor = forest.find_common_ancestor(v, w)
+                path_v = forest.get_path_from_child_to_parent(v, ancestor)  # v -> root
+                path_w = forest.get_path_from_child_to_parent(w, ancestor)  # w -> root
+                full_cycle = path_v[::-1] + path_w[:-1]  # root -> v, then w -> excluding root
+
+                return self.find_augmenting_path_with_blossom(full_cycle, matching)
 
         # No augmenting path has been found, so return a sentinel value.
         return None
+
+    def find_augmenting_path_with_blossom(self, full_cycle, matching):
+        # Perform a check on a contracted copy
+        graph2 = deepcopy(self)
+        matching2 = deepcopy(matching)
+        matching2.contract(full_cycle)
+        v_b = graph2.contract(full_cycle)
+        contracted_path = graph2.find_augmenting_path(matching2)
+
+        # No augmenting paths found
+        if contracted_path is None:
+            return None
+
+        # To make the code more organized, v_b must not be the last node of the path.
+        if contracted_path[-1] == v_b:
+            contracted_path.reverse()
+        i_v_b = contracted_path.index(v_b)
+
+        # We found an augmenting path without the contracted blossom, so no lifting needed.
+        if i_v_b is None:
+            return contracted_path
+
+        # Otherwise, the contracted path goes through the contracted blossom.
+        # If the path does not begin in the cycle, rotate the cycle so that element 0 is where the contracted
+        # path enters the cycle. This makes life slightly easier later on.
+        if i_v_b != 0:
+            v_entry = contracted_path[i_v_b - 1]
+            v_cycle_entry = next((n for n in self.adjacency[v_entry] if n in full_cycle))
+            i_cycle_entry = full_cycle.index(v_cycle_entry)
+            full_cycle = full_cycle[i_cycle_entry:] + full_cycle[:i_cycle_entry]
+
+        # Find exit index in this cycle
+        v_exit = contracted_path[i_v_b + 1]
+        v_cycle_exit = next((n for n in self.adjacency[v_exit] if n in full_cycle))
+        i_cycle_exit = full_cycle.index(v_cycle_exit)
+
+        # Given the in-cycle exit, find the route from the entry point to the exit point that would be even.
+        if i_cycle_exit % 2 == 0:
+            intra_cycle = full_cycle[:i_cycle_exit + 1]
+        else:
+            intra_cycle = full_cycle[i_cycle_exit:]
+            intra_cycle.append(full_cycle[0])
+            intra_cycle.reverse()
+
+        # Concatenate the paths!
+        return contracted_path[:i_v_b] + intra_cycle + contracted_path[i_v_b + 1:]
 
 
 def augment(path, matching):

@@ -42,6 +42,26 @@ class TestGraph(unittest.TestCase):
 
         self.assertEqual(3, matching.edge_count())
 
+    def test_blossom_3(self):
+        graph = Graph()
+        graph.add_edge_tup((1, 2))
+        graph.add_edge_tup((1, 12))
+        graph.add_edge_tup((2, 3))
+        graph.add_edge_tup((3, 4))
+        graph.add_edge_tup((3, 7))
+        graph.add_edge_tup((3, 10))
+        graph.add_edge_tup((4, 5))
+        graph.add_edge_tup((5, 6))
+        graph.add_edge_tup((5, 8))
+        graph.add_edge_tup((6, 9))
+        graph.add_edge_tup((7, 10))
+        graph.add_edge_tup((9, 11))
+        graph.add_edge_tup((11, 12))
+
+        matching = graph.maximum_matching()
+
+        self.assertEqual(5, matching.edge_count())
+
     def test_count_bipartite_1(self):
         graph = Graph()
         graph.add_edge_tup((1, 2))
@@ -96,7 +116,7 @@ class TestGraph(unittest.TestCase):
         self.assertNotIn((1, 3), matching.edges())
 
 
-class MyTestCase(unittest.TestCase):
+class TestSolution(unittest.TestCase):
     def test_infinite_cycle(self):
         self.assertTrue(is_infinite_cycle(1, 4))
 
