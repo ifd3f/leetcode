@@ -1,6 +1,6 @@
 import unittest
 
-from distract_the_trainers import is_infinite_cycle, solution, Graph
+from distract_the_trainers import is_infinite_cycle, solution, Graph, augment
 
 
 class TestGraph(unittest.TestCase):
@@ -8,14 +8,27 @@ class TestGraph(unittest.TestCase):
         graph = Graph()
         graph.add_edge_tup((1, 2))
         graph.add_edge_tup((3, 4))
-        graph.add_edge_tup((1, 4))
+        graph.add_edge_tup((2, 3))
 
         matching = Graph()
         matching.add_edge_tup((2, 3))
 
         path = graph.find_augmenting_path(matching)
 
-        self.assertEqual([1, 2, 3, 4], path)
+        self.assertIn(path, [[1, 2, 3, 4], [4, 3, 2, 1]])
+
+    def test_augment(self):
+        path = [1, 2, 3, 4]
+
+        matching = Graph()
+        matching.add_edge_tup((2, 3))
+
+        augment(path, matching)
+
+        self.assertIn((1, 2), matching.edges())
+        self.assertNotIn((2, 3), matching.edges())
+        self.assertIn((3, 4), matching.edges())
+        self.assertNotIn((1, 3), matching.edges())
 
 
 class MyTestCase(unittest.TestCase):

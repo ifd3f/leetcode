@@ -33,7 +33,7 @@ class Forest(object):
         self.parents[x] = p
         self.children[p].add(x)
         if p is None:
-            self.node_to_is_even[x] = False
+            self.node_to_is_even[x] = True
         else:
             self.node_to_is_even[x] = not self.node_to_is_even[p]
 
@@ -49,7 +49,7 @@ class Forest(object):
         return x
 
     def get_path_to_root(self, x):
-        while self.get_parent(x) is not None:
+        while x is not None:
             yield x
             x = self.get_parent(x)
 
@@ -123,6 +123,7 @@ class Graph(object):
                 visited.add(v)
                 search_stack.extend(self.adjacency[v])
 
+                # Skip v if it is not even
                 if not forest.is_even(v):
                     continue
 
@@ -146,14 +147,16 @@ class Graph(object):
 
                     # If x is None, then w is unmatched and exposed. We have found an augmented path from w to its root.
                     if x is None:
-                        return list(forest.get_path_to_root(w))
+                        path = [w]
+                        path.extend(forest.get_path_to_root(v))
+                        return path
 
                     # If v and w are different trees, we found an augmenting path.
                     if forest.get_root(v) != forest.get_root(w):
                         path_v = list(forest.get_path_to_root(v))
-                        path_w = list(forest.get_path_to_root(w))
-                        path_w.reverse()
-                        return path_v + path_w
+                        path_v.reverse()
+                        path_v.extend(forest.get_path_to_root(w))
+                        return path_v
 
                     # If v and w are the same tree: blossom detected.
                     # TODO blossom code
