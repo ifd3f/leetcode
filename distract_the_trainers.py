@@ -249,6 +249,9 @@ class Graph(object):
         if contracted_path is None:
             return None
 
+        return self.lift_contracted_path(contracted_path, full_cycle, v_b)
+
+    def lift_contracted_path(self, contracted_path, full_cycle, v_b):
         # To make the code more organized, v_b must not be the last node of the path.
         if contracted_path[-1] == v_b:
             contracted_path.reverse()

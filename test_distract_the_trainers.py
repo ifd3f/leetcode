@@ -125,6 +125,24 @@ class TestGraph(unittest.TestCase):
 
         self.assertEqual([3, 4, 5], intra_cycle)
 
+    def test_lcp_simple(self):
+        graph = generate_simple_blossom_graph()
+        path = [0, 1, 2, 7]
+        cycle = [2, 3, 4, 5, 6]
+
+        lifted = graph.lift_contracted_path(path, cycle, 2)
+
+        self.assertEqual([0, 1, 2, 6, 5, 7], lifted)
+
+    def test_lcp_rooted_blossom(self):
+        graph = generate_simple_blossom_graph()
+        path = [2, 7, 8, 9]
+        cycle = [2, 3, 4, 5, 6]
+
+        lifted = graph.lift_contracted_path(path, cycle, 2)
+
+        self.assertEqual([2, 6, 5, 7, 8, 9], lifted)
+
     def test_count_bipartite_1(self):
         graph = Graph()
         graph.add_edge_tup((1, 2))
