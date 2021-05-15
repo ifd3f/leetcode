@@ -349,4 +349,4 @@ def build_graph(xs):
 def solution(bananas):
     graph = build_graph(bananas)
     maximum_matching_count = graph.maximum_matching().edge_count()
-    return len(bananas) - maximum_matching_count
+    return len(bananas) - maximum_matching_count * 2
