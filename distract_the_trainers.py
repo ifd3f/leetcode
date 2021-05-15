@@ -91,6 +91,16 @@ class Graph(object):
             if matching.mate(node) is None:
                 yield node
 
+    def count_maximum_matching(self):
+        matching = Graph()
+        while True:
+            path = self.find_augmenting_path(matching)
+            if path is None:
+                break
+            augment(path, matching)
+
+        return sum(1 for _ in matching.edges())
+
     def find_augmenting_path(self, matching):
         # Resources:
         # https://en.wikipedia.org/wiki/Blossom_algorithm#Finding_an_augmenting_path

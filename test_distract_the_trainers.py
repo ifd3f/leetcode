@@ -8,7 +8,7 @@ class TestGraph(unittest.TestCase):
         graph = Graph()
         graph.add_edge_tup((1, 2))
         graph.add_edge_tup((3, 4))
-        graph.add_edge_tup((2, 3))
+        graph.add_edge_tup((3, 2))
 
         matching = Graph()
         matching.add_edge_tup((2, 3))
@@ -16,6 +16,31 @@ class TestGraph(unittest.TestCase):
         path = graph.find_augmenting_path(matching)
 
         self.assertIn(path, [[1, 2, 3, 4], [4, 3, 2, 1]])
+
+    def test_count_bipartite_1(self):
+        graph = Graph()
+        graph.add_edge_tup((1, 2))
+        graph.add_edge_tup((3, 4))
+        graph.add_edge_tup((1, 4))
+        graph.add_edge_tup((5, 2))
+
+        count = graph.count_maximum_matching()
+
+        self.assertEqual(count, 2)
+
+    def test_count_bipartite_2(self):
+        graph = Graph()
+        graph.add_edge_tup((1, 2))
+        graph.add_edge_tup((1, 4))
+        graph.add_edge_tup((3, 4))
+        graph.add_edge_tup((3, 6))
+        graph.add_edge_tup((5, 2))
+        graph.add_edge_tup((7, 2))
+        graph.add_edge_tup((7, 6))
+
+        count = graph.count_maximum_matching()
+
+        self.assertEqual(count, 4)
 
     def test_augment(self):
         path = [1, 2, 3, 4]
