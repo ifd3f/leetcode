@@ -51,7 +51,7 @@ class TestGraph(unittest.TestCase):
         graph.add_edge_tup((3, 5))
         graph.add_edge_tup((4, 5))
 
-        matching = graph.maximum_matching()
+        matching = graph.generate_maximum_matching()
 
         self.assertEqual(2, matching.edge_count())
 
@@ -65,7 +65,7 @@ class TestGraph(unittest.TestCase):
         graph.add_edge_tup((4, 5))
         graph.add_edge_tup((4, 6))
 
-        matching = graph.maximum_matching()
+        matching = graph.generate_maximum_matching()
 
         self.assertEqual(3, matching.edge_count())
 
@@ -85,7 +85,7 @@ class TestGraph(unittest.TestCase):
         graph.add_edge_tup((9, 11))
         graph.add_edge_tup((11, 12))
 
-        matching = graph.maximum_matching()
+        matching = graph.generate_maximum_matching()
 
         self.assertEqual(5, matching.edge_count())
 
@@ -150,7 +150,7 @@ class TestGraph(unittest.TestCase):
         graph.add_edge_tup((1, 4))
         graph.add_edge_tup((5, 2))
 
-        matching = graph.maximum_matching()
+        matching = graph.generate_maximum_matching()
 
         self.assertEqual(2, matching.edge_count())
 
@@ -164,7 +164,7 @@ class TestGraph(unittest.TestCase):
         graph.add_edge_tup((7, 2))
         graph.add_edge_tup((7, 6))
 
-        matching = graph.maximum_matching()
+        matching = graph.generate_maximum_matching()
 
         self.assertEqual(3, matching.edge_count())
 
@@ -179,7 +179,7 @@ class TestGraph(unittest.TestCase):
         graph.add_edge_tup((9, 8))
         graph.add_edge_tup((11, 12))
 
-        matching = graph.maximum_matching()
+        matching = graph.generate_maximum_matching()
 
         self.assertEqual(5, matching.edge_count())
 

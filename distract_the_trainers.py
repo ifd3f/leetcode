@@ -14,14 +14,33 @@ def is_infinite_cycle(a, b):
     return not ((s & (s - 1) == 0) and s != 0)
 
 
+def build_graph(xs):
+    graph = Graph()
+    for i, a in enumerate(xs):
+        for j in range(i):
+            b = xs[j]
+            if is_infinite_cycle(a, b):
+                graph.add_edge_tup((i, j))
+    return graph
+
+
 def mk_edge(a, b):
+    """
+    Convenient helper.
+    :param a: one node
+    :param b: another node
+    :return: an edge tuple in standard form (where left < right)
+    """
     return (b, a) if a > b else (a, b)
 
 
 class Forest(object):
+    """
+    Represents a forest used in maximum matching search.
+    """
+
     def __init__(self):
         self.parents = dict()
-        self.children = defaultdict(set)
         self.node_to_is_even = dict()
 
     def __contains__(self, item):
@@ -32,14 +51,10 @@ class Forest(object):
 
     def set_parent(self, x, p):
         self.parents[x] = p
-        self.children[p].add(x)
         if p is None:
             self.node_to_is_even[x] = True
         else:
             self.node_to_is_even[x] = not self.node_to_is_even[p]
-
-    def get_children(self, x):
-        return self.children[x]
 
     def get_parent(self, x):
         return self.parents[x]
@@ -104,7 +119,9 @@ class Graph(object):
         return sum(1 for _ in self.edges())
 
     def mate(self, n):
-        """If this graph represents a matching, returns the given node's matched mate, or None."""
+        """
+        If this graph represents a matching, returns the given node's matched mate, or None.
+        """
         neighbors = self.adjacency[n]
         assert len(neighbors) <= 1, "Invalid matching: %s has more than 1 neighbor" % n
         if len(neighbors) == 0:
@@ -128,7 +145,7 @@ class Graph(object):
         # Remove this node
         del self.adjacency[node]
 
-    def contract(self, nodes, as_matching=False):
+    def contract(self, nodes):
         """Contracts the given list of nodes, and returns the new node it was contracted to."""
         new_neighbors = set()
         for node in nodes:
@@ -149,7 +166,13 @@ class Graph(object):
             if matching.mate(node) is None:
                 yield node
 
-    def maximum_matching(self):
+    def generate_maximum_matching(self):
+        """
+        :return: a maximum matching of this graph.
+        """
+
+        # By Berge's lemma, a matching is maximum if it does not contain any augmenting paths. So, keep augmenting paths
+        # as long as they exist.
         matching = Graph()
         while True:
             path = self.find_augmenting_path(matching)
@@ -160,7 +183,13 @@ class Graph(object):
         return matching
 
     def find_augmenting_path(self, matching):
-        # Resources:
+        """
+        Finds an augmenting path in this graph given the provided matching.
+        :param matching: the matching, encoded as a Graph where the edges are the matches.
+        :return: an augmenting path, or None if there are no augmenting paths in this graph.
+        """
+
+        # Resources used for this algorithm:
         # https://en.wikipedia.org/wiki/Blossom_algorithm#Finding_an_augmenting_path
         # https://www.cs.tau.ac.il/~zwick/grad-algo-0910/match.pdf
         forest = Forest()
@@ -247,6 +276,14 @@ class Graph(object):
         return None
 
     def lift_contracted_path(self, contracted_path, full_cycle, v_b):
+        """
+        Given a cycle that is contracted to v_b, and a contracted path that has that cycle, lift the path to the full
+        graph.
+        :param contracted_path:
+        :param full_cycle: the cycle, with element 0 being a node marked as "even" in the forest.
+        :param v_b:
+        :return:
+        """
         # To make the code more organized, v_b must not be the last node of the path.
         if contracted_path[-1] == v_b:
             contracted_path.reverse()
@@ -263,8 +300,17 @@ class Graph(object):
         return contracted_path[:i_v_b] + intra_cycle + contracted_path[i_v_b + 1:]
 
     def get_intra_cycle_path(self, contracted_path, full_cycle, i_v_b):
+        """
+        Given a cycle that is contracted to v_b, and a contracted path that has that cycle at index i_v_b, find the path
+        within the cycle that should replace v_b in the contracted_cycle to expand it to the full graph.
+        :param contracted_path:
+        :param full_cycle: the cycle, with element 0 being a node marked as "even" in the forest.
+        :param i_v_b: index of v_b in contracted_path
+        :return:
+        """
+
         # If the path does not begin in the cycle, rotate the cycle so that element 0 is where the contracted
-        # path enters the cycle. This makes life slightly easier later on.
+        # path enters the cycle. This reduces the amount of messy if-statements later on.
         if i_v_b != 0:
             v_entry = contracted_path[i_v_b - 1]
             v_cycle_entry = next((n for n in self.adjacency[v_entry] if n in full_cycle))
@@ -301,52 +347,7 @@ def augment(path, matching):
         should_add = not should_add
 
 
-class Contraction(object):
-    def __init__(self, graph, nodes, name):
-        self.graph = graph
-        self.contracted_nodes = nodes
-        self.name = name
-        self.removed_edges = None
-        self.neighbors = None
-
-    def __enter__(self):
-        self.removed_edges = []
-        self.neighbors = set()
-        for node in self.contracted_nodes:
-            for neighbor in self.graph.adjacency[node]:
-                self.removed_edges.append((node, neighbor))
-                self.neighbors.add(neighbor)
-
-        for edge in self.removed_edges:
-            self.graph.rm_edge_tup(edge)
-
-        for neighbor in self.neighbors:
-            self.graph.add_edge_tup((self.name, neighbor))
-
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        if exc_val is not None:
-            raise exc_val
-
-        for neighbor in self.neighbors:
-            self.graph.rm_edge_tup((self.name, neighbor))
-
-        for edge in self.removed_edges:
-            self.graph.add_edge_tup(edge)
-
-
-def build_graph(xs):
-    graph = Graph()
-    for i, a in enumerate(xs):
-        for j in range(i):
-            b = xs[j]
-            if is_infinite_cycle(a, b):
-                graph.add_edge_tup((i, j))
-    return graph
-
-
 def solution(bananas):
     graph = build_graph(bananas)
-    maximum_matching_count = graph.maximum_matching().edge_count()
+    maximum_matching_count = graph.generate_maximum_matching().edge_count()
     return len(bananas) - maximum_matching_count * 2
