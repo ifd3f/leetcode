@@ -232,24 +232,19 @@ class Graph(object):
                 path_w = forest.get_path_from_child_to_parent(w, ancestor)  # w -> root
                 full_cycle = path_v[::-1] + path_w[:-1]  # root -> v, then w -> excluding root
 
-                return self.find_augmenting_path_with_blossom(full_cycle, matching)
+                # Perform a check on a contracted copy
+                graph2 = deepcopy(self)
+                matching2 = deepcopy(matching)
+                matching2.contract(full_cycle)
+                v_b = graph2.contract(full_cycle)
+                contracted_path = graph2.find_augmenting_path(matching2)
+
+                # No augmenting paths found
+                if contracted_path is not None:
+                    return self.lift_contracted_path(contracted_path, full_cycle, v_b)
 
         # No augmenting path has been found, so return a sentinel value.
         return None
-
-    def find_augmenting_path_with_blossom(self, full_cycle, matching):
-        # Perform a check on a contracted copy
-        graph2 = deepcopy(self)
-        matching2 = deepcopy(matching)
-        matching2.contract(full_cycle)
-        v_b = graph2.contract(full_cycle)
-        contracted_path = graph2.find_augmenting_path(matching2)
-
-        # No augmenting paths found
-        if contracted_path is None:
-            return None
-
-        return self.lift_contracted_path(contracted_path, full_cycle, v_b)
 
     def lift_contracted_path(self, contracted_path, full_cycle, v_b):
         # To make the code more organized, v_b must not be the last node of the path.
