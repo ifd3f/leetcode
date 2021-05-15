@@ -4,14 +4,14 @@ from distract_the_trainers import is_infinite_cycle, solution, Graph
 
 
 class TestGraph(unittest.TestCase):
-    def test_bipartite(self):
+    def test_snake_4(self):
         graph = Graph()
         graph.add_edge_tup((1, 2))
         graph.add_edge_tup((3, 4))
         graph.add_edge_tup((1, 4))
 
         matching = Graph()
-        matching.add_edge_tup((1, 4))
+        matching.add_edge_tup((2, 3))
 
         path = graph.find_augmenting_path(matching)
 

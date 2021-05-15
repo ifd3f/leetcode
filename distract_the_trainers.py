@@ -97,8 +97,9 @@ class Graph(object):
         # https://www.cs.tau.ac.il/~zwick/grad-algo-0910/match.pdf
         forest = Forest()
         marked_edges = set()
+        marked_nodes = set()
 
-        # Unmark all edges of matching
+        # Mark all edges of matching
         for edge in matching.edges():
             marked_edges.add(edge)
 
@@ -114,39 +115,52 @@ class Graph(object):
             search_stack = [tree_root]
             visited = set()
             while len(search_stack) > 0:
-                node = search_stack.pop()
-                if node in visited:
+                # We want to find the next unmarked even vertex.
+                # Perform the DFS step
+                v = search_stack.pop()
+                if v in visited:
                     continue
-                visited.add(node)
+                visited.add(v)
+                search_stack.extend(self.adjacency[v])
 
-                if node not in forest:
-                    x = matching.mate(node)
-                    pass
+                if not forest.is_even(v):
+                    continue
 
-                # If even, we can do stuff to it
-                if forest.is_even(node):
-                    mate = matching.mate(node)
-                    if mate is None:  # No mate, so this is unmatched and therefore exposed
-                        return list(forest.get_path_to_root(node))
-                    else:
-                        forest.set_parent(mate, node)  # Add the mate to the forest
+                # Now we know that v is even, look through its unmarked edges.
+                for w in self.adjacency[v]:
+                    # Exclude marked edges.
+                    if mk_edge(v, w) in marked_edges:
+                        continue
 
-                    # Are they different trees?
-                    if forest.get_root(node) != tree_root:
-                        # Found an augmenting path
-                        path = [node]
-                        path.extend(forest.get_path_to_root(node))
-                        return path
+                    x = matching.mate(w)
 
-                    # Same tree: blossom detected.
+                    # If w not in forest, then it is matched already.
+                    if w not in forest:
+                        forest.set_parent(w, v)
+                        forest.set_parent(x, w)
+                        continue
+
+                    # If w is odd, do nothing
+                    if not forest.is_even(w):
+                        continue
+
+                    # If x is None, then w is unmatched and exposed. We have found an augmented path from w to its root.
+                    if x is None:
+                        return list(forest.get_path_to_root(w))
+
+                    # If v and w are different trees, we found an augmenting path.
+                    if forest.get_root(v) != forest.get_root(w):
+                        path_v = list(forest.get_path_to_root(v))
+                        path_w = list(forest.get_path_to_root(w))
+                        path_w.reverse()
+                        return path_v + path_w
+
+                    # If v and w are the same tree: blossom detected.
                     # TODO blossom code
                     # graph2 = deepcopy(self)
                     # matching2 = contract stuff
                     # graph2.find_augmenting_path()
                     assert False, "Blossom NYI"
-
-                # Add neighbors to the graph search
-                search_stack.extend(self.adjacency[node])
 
         # No augmenting path has been found, so return a sentinel value.
         return None
