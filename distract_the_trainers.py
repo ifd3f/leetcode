@@ -68,6 +68,9 @@ class Graph(object):
                     yield edge
                     es.add(edge)
 
+    def edge_count(self):
+        return sum(1 for _ in self.edges())
+
     def mate(self, n):
         """If this graph represents a matching, returns the given node's matched mate, or None."""
         neighbors = self.adjacency[n]
@@ -91,7 +94,7 @@ class Graph(object):
             if matching.mate(node) is None:
                 yield node
 
-    def count_maximum_matching(self):
+    def maximum_matching(self):
         matching = Graph()
         while True:
             path = self.find_augmenting_path(matching)
@@ -99,19 +102,19 @@ class Graph(object):
                 break
             augment(path, matching)
 
-        return sum(1 for _ in matching.edges())
+        return matching
 
     def find_augmenting_path(self, matching):
         # Resources:
         # https://en.wikipedia.org/wiki/Blossom_algorithm#Finding_an_augmenting_path
         # https://www.cs.tau.ac.il/~zwick/grad-algo-0910/match.pdf
         forest = Forest()
-        marked_edges = set()
-        marked_nodes = set()
+        visited_edges = set()
+        visited_nodes = set()
 
         # Mark all edges of matching
         for edge in matching.edges():
-            marked_edges.add(edge)
+            visited_edges.add(edge)
 
         # Use exposed nodes as roots of their own trees
         exposed_nodes = list(self.exposed_vertices(matching))
@@ -120,60 +123,60 @@ class Graph(object):
             forest.set_parent(node, None)
 
         # Explore the graph from the exposed nodes.
-        for tree_root in exposed_nodes:
-            # Use a DFS because it's easiest.
-            search_stack = [tree_root]
-            visited = set()
-            while len(search_stack) > 0:
-                # We want to find the next unmarked even vertex.
-                # Perform the DFS step
-                v = search_stack.pop()
-                if v in visited:
+        # Use a DFS because it's easiest.
+        search_stack = list(exposed_nodes)
+        while len(search_stack) > 0:
+            # We want to find the next unmarked even vertex.
+            # Perform the DFS step
+            v = search_stack.pop()
+            if v in visited_nodes:
+                continue
+            visited_nodes.add(v)
+            search_stack.extend(self.adjacency[v])
+
+            # Skip v if it is not even
+            if not forest.is_even(v):
+                continue
+
+            # Now we know that v is even, look through its unmarked edges.
+            for w in self.adjacency[v]:
+                # Exclude marked edges.
+                edge = mk_edge(v, w)
+                if edge in visited_edges:
                     continue
-                visited.add(v)
-                search_stack.extend(self.adjacency[v])
+                visited_edges.add(edge)
 
-                # Skip v if it is not even
-                if not forest.is_even(v):
+                x = matching.mate(w)
+
+                # If w not in forest, then it is matched already.
+                if w not in forest:
+                    forest.set_parent(w, v)
+                    forest.set_parent(x, w)
                     continue
 
-                # Now we know that v is even, look through its unmarked edges.
-                for w in self.adjacency[v]:
-                    # Exclude marked edges.
-                    if mk_edge(v, w) in marked_edges:
-                        continue
+                # If w is odd, do nothing
+                if not forest.is_even(w):
+                    continue
 
-                    x = matching.mate(w)
+                # If x is None, then w is unmatched and exposed. We have found an augmented path from w to its root.
+                if x is None:
+                    path = [w]
+                    path.extend(forest.get_path_to_root(v))
+                    return path
 
-                    # If w not in forest, then it is matched already.
-                    if w not in forest:
-                        forest.set_parent(w, v)
-                        forest.set_parent(x, w)
-                        continue
+                # If v and w are different trees, we found an augmenting path.
+                if forest.get_root(v) != forest.get_root(w):
+                    path_v = list(forest.get_path_to_root(v))
+                    path_v.reverse()
+                    path_v.extend(forest.get_path_to_root(w))
+                    return path_v
 
-                    # If w is odd, do nothing
-                    if not forest.is_even(w):
-                        continue
-
-                    # If x is None, then w is unmatched and exposed. We have found an augmented path from w to its root.
-                    if x is None:
-                        path = [w]
-                        path.extend(forest.get_path_to_root(v))
-                        return path
-
-                    # If v and w are different trees, we found an augmenting path.
-                    if forest.get_root(v) != forest.get_root(w):
-                        path_v = list(forest.get_path_to_root(v))
-                        path_v.reverse()
-                        path_v.extend(forest.get_path_to_root(w))
-                        return path_v
-
-                    # If v and w are the same tree: blossom detected.
-                    # TODO blossom code
-                    # graph2 = deepcopy(self)
-                    # matching2 = contract stuff
-                    # graph2.find_augmenting_path()
-                    assert False, "Blossom NYI"
+                # If v and w are the same tree: blossom detected.
+                # TODO blossom code
+                # graph2 = deepcopy(self)
+                # matching2 = contract stuff
+                # graph2.find_augmenting_path()
+                assert False, "Blossom NYI"
 
         # No augmenting path has been found, so return a sentinel value.
         return None
