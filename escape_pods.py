@@ -11,7 +11,6 @@ class Edge:
         self.used = 0
 
     def is_full(self):
-        assert self.used <= self.capacity  # TODO remove
         return self.used == self.capacity
 
 
@@ -26,6 +25,9 @@ class Node:
 
     def max_output(self):
         return sum((conn.capacity for conn in self.neighbors))
+
+    def total_used_flow(self):
+        return sum((conn.used for conn in self.neighbors))
 
     def find_open_path(self, sink):
         queue = deque([self])
@@ -45,9 +47,13 @@ class Node:
                 queue.append(edge.target)
                 node_to_previous_edge[edge.target] = edge
 
+        # We did not find the sink, so therea re no more open paths.
+        if sink not in node_to_previous_edge:
+            return None
+
         # Back-traverse
-        path_to_source = []
         edge = node_to_previous_edge[sink]
+        path_to_source = []
         while edge is not None:
             path_to_source.append(edge)
             edge = node_to_previous_edge[edge.source]
@@ -83,5 +89,20 @@ def build_graph(sources, sinks, network):
     return super_source, super_sink
 
 
+def augment_edge_path(edges):
+    to_augment = min((edge.capacity - edge.used for edge in edges))
+
+    for edge in edges:
+        edge.used += to_augment
+
+
 def solution(entrances, exits, path):
-    pass
+    source, sink = build_graph(entrances, exits, path)
+
+    while True:
+        path = source.find_open_path(sink)
+        if path is None:
+            break
+        augment_edge_path(path)
+
+    return source.total_used_flow()

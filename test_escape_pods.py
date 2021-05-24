@@ -43,6 +43,18 @@ class GraphTests(unittest.TestCase):
 
         self.assertEqual([e2, e1], path)
 
+    def test_find_unused_path_with_full_edge(self):
+        source = Node()
+        n0 = Node()
+        sink = Node()
+        e1 = source.send(4, n0)
+        e2 = n0.send(4, sink)
+        e2.used = 4
+
+        path = source.find_open_path(sink)
+
+        self.assertIsNone(path)
+
 
 class EscapePodTests(unittest.TestCase):
     def test_solution_provided_1(self):
