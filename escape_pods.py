@@ -32,7 +32,7 @@ class Node:
         node_to_previous_edge = {
             self: None
         }
-        while len(deque) > 0:
+        while len(queue) > 0:
             node = queue.popleft()
 
             if node is sink:
@@ -49,7 +49,7 @@ class Node:
         path_to_source = []
         edge = node_to_previous_edge[sink]
         while edge is not None:
-            path_to_source.append(edge.source)
+            path_to_source.append(edge)
             edge = node_to_previous_edge[edge.source]
 
         return path_to_source
