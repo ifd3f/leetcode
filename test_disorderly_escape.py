@@ -19,11 +19,32 @@ class TestHelpers(unittest.TestCase):
     def test_symp_2(self):
         self.assertEqual(9, symp(2, 2, 3))
 
-    def test_1_row_grid(self):
+    def test_symp_3(self):
+        self.assertEqual(10, symp(2, 3, 4))
+
+    def test_symp_4(self):
+        self.assertEqual(1, symp(4, 0, 4))
+
+    def test_grid_0(self):
+        self.assertEqual(1, f(0, 3, 3))
+
+    def test_grid_1(self):
         self.assertEqual(10, f(1, 3, 3))
 
-    def test_0_row_grid(self):
-        self.assertEqual(1, f(0, 3, 3))
+    def test_grid_2(self):
+        self.assertEqual(13, f(2, 3, 2))
+
+    def test_grid_3(self):
+        self.assertEqual(430, f(2, 3, 4))
+
+    def test_grid_4(self):
+        self.assertEqual(10, f(1, 3, 3))
+
+    def test_grid_5(self):
+        self.assertEqual(3, f(1, 2, 2))
+
+    def test_grid_6(self):
+        self.assertEqual(4, f(1, 3, 2))
 
 
 class TestSolution(unittest.TestCase):

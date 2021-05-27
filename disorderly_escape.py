@@ -16,26 +16,27 @@ def solution(w, h, s):
 
 
 def f(w, h, s):
-    if w == 0:
-        return 1
-    if h == 0:
+    if w == 0 or h == 0:
         return 1
     total = 0
     for i in range(1, w + 1):
         for j in range(1, h + 1):
-            term = (s ** gcd(i, j)) * f(w - i, h - j, s) * symp(h - j, i, s) * symp(w - i, j, s)
+            p = (s ** gcd(i, j))
+            s2, s1 = symp(h - j, i, s), symp(w - i, j, s)
+            prev = f(w - i, h - j, s)
+            term = p * s1 * s2 * prev
             total += term
-            print(w, h, s, i, j, term)
+            if w == 2 and h == 3:
+                print(i, j, p, s1, s2, prev, term)
     return total / (w * h)
 
 
 def symp(n, k, s):
-    if n == 0:
+    if n == 0 or k == 0:
         return 1
     total = 0
     for i in range(1, n + 1):
         term = (s ** gcd(i, k)) * symp(n - i, k, s)
-        print n, i, k, gcd(i, k), s, term
         total += term
     return total / n
 
