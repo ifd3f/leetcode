@@ -4,12 +4,6 @@ from disorderly_escape import *
 
 
 class TestHelpers(unittest.TestCase):
-    def test_symmetric_s2(self):
-        self.assertEqual(3, symmetric_orbits(2, 2))
-
-    def test_symmetric_s3(self):
-        self.assertEqual(10, symmetric_orbits(3, 3))
-
     def test_symp_0(self):
         self.assertEqual(6, symp(1, 9, 6))
 
