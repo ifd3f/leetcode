@@ -10,11 +10,20 @@ class TestHelpers(unittest.TestCase):
     def test_symmetric_s3(self):
         self.assertEqual(10, symmetric_orbits(3, 3))
 
+    def test_symp_0(self):
+        self.assertEqual(6, symp(1, 9, 6))
+
+    def test_symp_1(self):
+        self.assertEqual(36, symp(2, 2, 6))
+
+    def test_symp_2(self):
+        self.assertEqual(9, symp(2, 2, 3))
+
     def test_1_row_grid(self):
         self.assertEqual(10, f(1, 3, 3))
 
     def test_0_row_grid(self):
-        self.assertEqual(10, f(0, 3, 3))
+        self.assertEqual(1, f(0, 3, 3))
 
 
 class TestSolution(unittest.TestCase):
