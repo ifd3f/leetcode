@@ -38,16 +38,10 @@ class SymmetricSymmetricProduct(object):
             for j in range(1, h + 1):
                 p = (self.s ** gcd(i, j))
                 s2, s1 = self.symp(h - j, i), self.symp(w - i, j)
-                prev = self.data[h - j][w - i]
+                prev = self(w - i, h - j)
                 term = p * s1 * s2 * prev
                 total += term
-                if w == 2 and h == 3:
-                    print(i, j, p, s1, s2, prev, term)
         return total / (w * h)
-
-
-def symp(n, k, s):
-    return SymmetricMonomialProduct(n, k, s)(n, k)
 
 
 class SymmetricMonomialProduct(object):
@@ -64,18 +58,9 @@ class SymmetricMonomialProduct(object):
     def calculate(self, n, k):
         total = 0
         for i in range(1, n + 1):
-            term = (self.s ** gcd(i, k)) * self.data[n - i][k]
+            term = (self.s ** gcd(i, k)) * self(n - i, k)
             total += term
         return total / n
-
-
-def symmetric_orbits(n, s):
-    if n == 0:
-        return 1
-    total = 0
-    for i in range(n):
-        total += s * symmetric_orbits(i, s)
-    return total / n
 
 
 def grid_print(xss):
@@ -83,10 +68,10 @@ def grid_print(xss):
     cell_length = max((len(s) for row in strs for s in row)) + 1
     for row in strs:
         for cell in row:
-            print cell.ljust(cell_length, ' '),
+            print cell.rjust(cell_length),
         print
 
 
 if __name__ == '__main__':
-    ssp = SymmetricSymmetricProduct(3, 3, 2)
+    ssp = SymmetricSymmetricProduct(5, 5, 4)
     grid_print(ssp.data)

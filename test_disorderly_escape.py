@@ -3,6 +3,19 @@ import unittest
 from disorderly_escape import *
 
 
+def symp(n, k, s):
+    return SymmetricMonomialProduct(n, k, s)(n, k)
+
+
+def symmetric_orbits(n, s):
+    if n == 0:
+        return 1
+    total = 0
+    for i in range(n):
+        total += s * symmetric_orbits(i, s)
+    return total / n
+
+
 class TestHelpers(unittest.TestCase):
     def test_symp_0(self):
         self.assertEqual(6, symp(1, 9, 6))
@@ -39,6 +52,9 @@ class TestHelpers(unittest.TestCase):
 
     def test_grid_6(self):
         self.assertEqual(4, f(1, 3, 2))
+
+    def test_grid_7(self):
+        self.assertEqual(symmetric_orbits(8, 4), f(1, 8, 4))
 
 
 class TestSolution(unittest.TestCase):
