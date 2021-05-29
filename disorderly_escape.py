@@ -9,20 +9,6 @@ def prod(iterable):
     return p
 
 
-def gcd2(a, b):
-    if a == 0 and b == 0:
-        return 1
-    return gcd(a, b)
-
-
-def lcm(a, b):
-    return (a * b) / gcd(a, b)
-
-
-def solution(w, h, s):
-    return str(f(w, h, s))
-
-
 class Mono(object):
     def __init__(self, factors):
         self.factors = factors
@@ -74,7 +60,10 @@ class Mono(object):
         return Mono(result)
 
     def substitute(self, s):
-        return prod((a ** p for a, p in self.factors.items()))
+        return prod((
+            s ** p
+            for a, p in self.factors.items()
+        ))
 
 
 CIM_ONE = Mono({})
@@ -142,7 +131,10 @@ class Poly(object):
         return Poly(result)
 
     def substitute(self, s):
-        return prod((c * m.substitute(s) for m, c in self.monomials.items()))
+        return sum((
+            c * m.substitute(s)
+            for m, c in self.monomials.items()
+        ))
 
 
 CIP_ZERO = Poly({})
@@ -157,9 +149,8 @@ def grid_print(xss):
         print
 
 
-if __name__ == '__main__':
-    p1 = Poly.symmetric_group(2)
-    p2 = Poly.symmetric_group(3)
-    print repr(p1.cycle_cartesian(p1))
+def solution(w, h, s):
+    p1 = Poly.symmetric_group(w)
+    p2 = Poly.symmetric_group(h)
 
-    print p1.cycle_cartesian(p2).substitute(2)
+    return str(p1.cycle_cartesian(p2).substitute(s))
