@@ -1,4 +1,12 @@
-from fractions import gcd
+from collections import Counter, defaultdict
+from fractions import gcd, Fraction
+
+
+def prod(iterable):
+    p = 1
+    for x in iterable:
+        p *= x
+    return p
 
 
 def gcd2(a, b):
@@ -15,52 +23,121 @@ def solution(w, h, s):
     return str(f(w, h, s))
 
 
-def f(w, h, s):
-    return SymmetricSymmetricProduct(w, h, s)(w, h)
+class CIMonomial(object):
+    def __init__(self, factors):
+        self.factors = Counter(factors)
+        self.hash = None
+
+    def __str__(self):
+        return ' '.join('a_{%s}^{%s}' % (s, p) for s, p in self.factors.items())
+
+    def __eq__(self, other):
+        return self.factors == other.factors
+
+    def __hash__(self):
+        if self.hash is None:
+            self.hash = 0
+            for s, p in self.factors.items():
+                self.hash <<= 3
+                self.hash += s * p
+                self.hash %= 2 ** 31
+        return self.hash
+
+    def is_one(self):
+        return all((p == 0 for _, p in self.factors.items()))
+
+    def __mul__(self, other):
+        assert isinstance(other, CIMonomial), "Can only multiply monomials with monomials"
+        if other.is_one():
+            return self
+        if self.is_one():
+            return other
+        return CIMonomial(self.factors + other.factors)
+
+    def cycle_cartesian(self, other):
+        assert isinstance(other, CIMonomial), "Can only multiply monomials with monomials"
+        if other.is_one() or self.is_one():
+            return CIM_ONE
+        result = Counter()
+        for f1, p1 in self.factors.items():
+            for f2, p2 in other.factors.items():
+                g = gcd(f1, f2)
+                a_sub = (f1 * f2) / g
+                a_pow = g
+                result[a_sub] += a_pow
+        return CIMonomial(result)
+
+    def substitute(self, s):
+        return prod((a ** p for a, p in self.factors.items()))
 
 
-class SymmetricSymmetricProduct(object):
-    def __init__(self, w_max, h_max, s):
-        self.data = [[1] * (w_max + 1) for i in range(h_max + 1)]
-        self.s = s
-        m = max(w_max, h_max)
-        self.symp = SymmetricMonomialProduct(m, m, s)
-        for w in range(1, w_max + 1):
-            for h in range(1, h_max + 1):
-                self.data[h][w] = self.calculate(w, h)
-
-    def __call__(self, w, h):
-        return self.data[h][w]
-
-    def calculate(self, w, h):
-        total = 0
-        for i in range(1, w + 1):
-            for j in range(1, h + 1):
-                p = (self.s ** gcd(i, j))
-                s2, s1 = self.symp(h - j, i), self.symp(w - i, j)
-                prev = self(w - i, h - j)
-                term = p * s1 * s2 * prev
-                total += term
-        return total / (w * h)
+CIM_ONE = CIMonomial({})
 
 
-class SymmetricMonomialProduct(object):
-    def __init__(self, n_max, k_max, s):
-        self.data = [[1] * (k_max + 1) for i in range(n_max + 1)]
-        self.s = s
-        for n in range(1, n_max + 1):
-            for k in range(1, k_max + 1):
-                self.data[n][k] = self.calculate(n, k)
+class CIPolynomial(object):
+    def __init__(self, monomials):
+        self.monomials = monomials
 
-    def __call__(self, n, k):
-        return self.data[n][k]
+    def __repr__(self):
+        return 'CIP(' + str(self) + ')'
 
-    def calculate(self, n, k):
-        total = 0
-        for i in range(1, n + 1):
-            term = (self.s ** gcd(i, k)) * self(n - i, k)
-            total += term
-        return total / n
+    @staticmethod
+    def symmetric_group(n):
+        symmetric_groups = [CIP_ZERO] * (n + 1)
+        symmetric_groups[0] = CIPolynomial({CIM_ONE: 1})
+        for m in range(1, n + 1):
+            poly_sum = CIP_ZERO
+            for i in range(1, m + 1):
+                mono = CIMonomial({i: 1})
+                poly = CIPolynomial({mono: 1})
+                zs = symmetric_groups[m - i]
+                term = zs.multiply(poly)
+                poly_sum += term
+            symmetric_groups[m] = poly_sum.scale(Fraction(1, m))
+            print symmetric_groups
+        return symmetric_groups[n]
+
+    def __str__(self):
+        return ' + '.join('%s %s' % (c, m) for m, c in self.monomials.items())
+
+    def multiply(self, other):
+        assert isinstance(other, CIPolynomial), "Can only multiply polynomials with polynomials"
+        result = defaultdict(lambda: Fraction(0))
+        for m1, c1 in self.monomials.items():
+            for m2, c2 in other.monomials.items():
+                monomial = m1 * m2
+                coeff = c1 * c2
+                result[monomial] += coeff
+        return CIPolynomial(result)
+
+    def __add__(self, other):
+        result = defaultdict(lambda: Fraction(0))
+        for m, c in self.monomials.items():
+            result[m] += c
+        for m, c in other.monomials.items():
+            result[m] += c
+        return CIPolynomial(result)
+
+    def scale(self, scalar):
+        return CIPolynomial({
+            m1: c1 * scalar for m1, c1 in self.monomials.items()
+        })
+
+    def cycle_cartesian(self, other):
+        assert isinstance(other, CIPolynomial), "Can only multiply polynomials with polynomials"
+        result = defaultdict(lambda: Fraction(0))
+        for m1, c1 in self.monomials.items():
+            for m2, c2 in other.monomials.items():
+                monomial = m1.cycle_cartesian(m2)
+                coeff = c1 * c2
+                result[monomial] += coeff
+        return CIPolynomial(result)
+
+    def substitute(self, s):
+        return prod((c ** m.substitute(s) for m, c in self.monomials.items()))
+
+
+CIP_ZERO = CIPolynomial({})
 
 
 def grid_print(xss):
@@ -73,5 +150,5 @@ def grid_print(xss):
 
 
 if __name__ == '__main__':
-    ssp = SymmetricSymmetricProduct(5, 5, 4)
-    grid_print(ssp.data)
+    print CIPolynomial.symmetric_group(2)
+    print CIPolynomial.symmetric_group(3)
