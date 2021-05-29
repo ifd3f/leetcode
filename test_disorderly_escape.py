@@ -12,6 +12,10 @@ def symmetric_orbits(n, s):
     return total / n
 
 
+def symmetric_group(n):
+    return symmetric_group_cycle_indices(n)[n]
+
+
 class TestMonomial(unittest.TestCase):
     def test_monomial_hashes_correctly(self):
         m1 = Mono({5: 3, 3: 2, 6: 5})
@@ -26,37 +30,37 @@ class TestMonomial(unittest.TestCase):
         m2 = Mono({6: 1})
         actual = Mono({6: 3})
 
-        prod = m1.cycle_cartesian(m2)
+        prod = m1 & m2
 
         self.assertEqual(actual, prod)
 
 
 class TestPolynomial(unittest.TestCase):
     def test_symmetric_group_2(self):
-        p1 = Poly.symmetric_group(2)
+        p1 = symmetric_group(2)
 
         actual = Poly({Mono({1: 2}): Fraction(1, 2), Mono({2: 1}): Fraction(1, 2)})
         self.assertEqual(actual, p1)
 
     def test_symmetric_group_3(self):
-        p1 = Poly.symmetric_group(3)
+        p1 = symmetric_group(3)
 
         actual = Poly({Mono({3: 1}): Fraction(1, 3), Mono({1: 1, 2: 1}): Fraction(1, 2), Mono({1: 3}): Fraction(1, 6)})
         self.assertEqual(actual, p1)
 
     def test_cycle_cartesian_1(self):
-        p1 = Poly.symmetric_group(2)
+        p1 = symmetric_group(2)
 
-        prod = p1.cycle_cartesian(p1)
+        prod = p1 & p1
 
         actual = Poly({Mono({1: 4}): Fraction(1, 4), Mono({2: 2}): Fraction(3, 4)})
         self.assertEqual(actual, prod)
 
     def test_cycle_cartesian_2(self):
-        p1 = Poly.symmetric_group(2)
-        p2 = Poly.symmetric_group(3)
+        p1 = symmetric_group(2)
+        p2 = symmetric_group(3)
 
-        prod = p1.cycle_cartesian(p2)
+        prod = p1 & p2
 
         actual = Poly({
             Mono({1: 6}): Fraction(1, 12),

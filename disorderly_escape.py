@@ -92,9 +92,9 @@ class Mono(object):
             return other
         return Mono(Counter(self.factors) + Counter(other.factors))
 
-    def cycle_cartesian(self, other):
+    def __and__(self, other):
         """
-        Performs a permutation product (see note at top).
+        Performs a CICP (see note at top).
 
         Consider two single-cycle permutations, p1 and p2, of lengths i and j respectively, and p3 being the
         cartesian product of p1 and p2, acting on an i-by-j grid. Z({p1}) = a_i and Z({p2}) = a_j by the definition
@@ -131,11 +131,13 @@ class Mono(object):
         # CICP distributes across multiplication.
         for f1, p1 in self.factors.items():
             for f2, p2 in other.factors.items():
-                # Compute a_i & a_j = a_{lcm(i, j)}^{gcd(i, j)}
+                # Compute a_i & a_j = a_{lcm(i, j)}^{gcd(i, j)}.
+
                 g = gcd(f1, f2)
-                a_pow = g * p1 * p2  # The CPP is associative with exponentiation.
+                a_pow = g * p1 * p2  # CICP is associative with exponentiation.
                 a_sub = (f1 * f2) / g  # LCM in terms of of GCD.
                 result[a_sub] += a_pow  # Multiply the resulting monomial by this factor.
+
         return Mono(result)
 
     def substitute(self, s):
@@ -168,21 +170,6 @@ class Poly(object):
 
     def __eq__(self, other):
         return self.monomials == other.monomials
-
-    @staticmethod
-    def symmetric_group(n):
-        symmetric_groups = [CIP_ZERO] * (n + 1)
-        symmetric_groups[0] = Poly({CIM_ONE: 1})
-        for m in range(1, n + 1):
-            poly_sum = CIP_ZERO
-            for i in range(1, m + 1):
-                mono = Mono({i: 1})
-                poly = Poly({mono: 1})
-                zs = symmetric_groups[m - i]
-                term = zs * poly
-                poly_sum += term
-            symmetric_groups[m] = poly_sum.scale(Fraction(1, m))
-        return symmetric_groups[n]
 
     def __str__(self):
         return ' + '.join('%s %s' % (c, m) for m, c in self.monomials.items())
@@ -224,9 +211,9 @@ class Poly(object):
             m1: c1 * scalar for m1, c1 in self.monomials.items()
         })
 
-    def cycle_cartesian(self, other):
+    def __and__(self, other):
         """
-        Performs a cartesian permutation product (see note at top).
+        Performs a CICP (see note at top).
 
         Distributive across addition:
         Consider the product d & (b + c) where d, b, and c are monomials. Since b and c each represent their own
@@ -242,7 +229,7 @@ class Poly(object):
         # The CPP distributes across addition.
         for m1, c1 in self.monomials.items():
             for m2, c2 in other.monomials.items():
-                monomial = m1.cycle_cartesian(m2)  # Perform CPP on the monomial.
+                monomial = m1 & m2  # Perform CICP on the monomial.
                 coeff = c1 * c2  # Scalar coefficients are multiplied together.
                 result[monomial] += coeff
         return Poly(result)
@@ -260,21 +247,34 @@ class Poly(object):
 
 
 CIM_ONE = Mono({})
-
 CIP_ZERO = Poly({})
 
 
-def grid_print(xss):
-    strs = [[str(x) for x in xs] for xs in xss]
-    cell_length = max((len(s) for row in strs for s in row)) + 1
-    for row in strs:
-        for cell in row:
-            print cell.rjust(cell_length),
-        print
+def symmetric_group_cycle_indices(n):
+    """
+    Calculates the cycle indices of all symmetric groups up to and including n.
+
+    This is a dynamic programming-based implementation of the recurrence at the end of
+    https://en.wikipedia.org/wiki/Cycle_index#Symmetric_group_Sn
+
+    :param n: the maximum symmetric group cycle index to calculate.
+    :return: a list of length n + 1 where the cycle index of S_i is at index i of the list.
+    """
+
+    sgs = [CIP_ZERO] * (n + 1)  # Initialize all as zero
+    sgs[0] = Poly({CIM_ONE: 1})  # Base case: Z(S_0) = 1
+
+    for m in range(1, n + 1):
+        for i in range(1, m + 1):
+            a_i = Poly({Mono({i: 1}): 1})  # single term a_i
+            zs = sgs[m - i]
+            sgs[m] += a_i * zs
+        sgs[m] = sgs[m].scale(Fraction(1, m))
+
+    return sgs
 
 
 def solution(w, h, s):
-    p1 = Poly.symmetric_group(w)
-    p2 = Poly.symmetric_group(h)
-
-    return str(p1.cycle_cartesian(p2).substitute(s))
+    sgs = symmetric_group_cycle_indices(max(w, h))
+    ci = sgs[w] & sgs[h]
+    return str(ci.substitute(s))
