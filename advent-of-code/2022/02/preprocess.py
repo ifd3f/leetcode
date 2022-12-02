@@ -12,17 +12,23 @@ mapping = {
     'Z': 's',
 }
 
+mapping2 = {
+    'X': 'l',
+    'Y': 'd',
+    'Z': 'w',
+}
+
 conn = sqlite3.connect("input.db")
-conn.execute('DROP TABLE IF EXISTS strategy')
-conn.execute('CREATE TABLE strategy(opp TEXT, self TEXT)''')
+with open('./init.sql') as f:
+    conn.executescript(f.read())
 
 def read_input():
     with open('./input') as f:
         for line in f:
             o, s = line.strip().split()
-            yield mapping[o], mapping[s]
+            yield mapping[o], mapping[s], mapping2[s]
 
 
-conn.executemany('INSERT INTO strategy VALUES(?, ?)', read_input())
+conn.executemany('INSERT INTO strategy VALUES(?, ?, ?)', read_input())
 conn.commit()
 
