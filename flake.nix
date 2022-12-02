@@ -7,6 +7,7 @@
         buildInputs = [
           python3
           racket
+          sqlite
         ];
       };
 
