@@ -8,6 +8,11 @@ using result = apply_moves<
     moves_list
 >::value;
 
+using result2 = apply_moves2<
+    initial_stacks,
+    moves_list
+>::value;
+
 template <typename css>
 struct get_top_items;
 
@@ -42,7 +47,9 @@ int main() {
     print_charlist<typename get_top_items<result>::value>::run();
     std::cout << std::endl;
 
-    // std::cout << "Part 2: ";
+    std::cout << "Part 2: ";
+    print_charlist<typename get_top_items<result2>::value>::run();
+    std::cout << std::endl;
     return 0;
 }
 
