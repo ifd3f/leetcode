@@ -9,8 +9,8 @@
           racket
           sqlite
           clojure
+          perl
         ];
       };
-
   };
 }
