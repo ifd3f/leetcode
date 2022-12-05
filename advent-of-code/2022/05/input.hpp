@@ -1,29 +1,29 @@
 #pragma once
 #include "util.hpp"
 
-using initial_stacks = list<
-    list<
+using initial_stacks = typename list<
+    typename list<
         charbox<'Q'>,
         charbox<'F'>,
         charbox<'L'>,
         charbox<'S'>,
         charbox<'R'>
-    >,
-    list<
+    >::value,
+    typename list<
         charbox<'T'>,
         charbox<'P'>,
         charbox<'G'>,
         charbox<'Q'>,
         charbox<'Z'>,
         charbox<'N'>
-    >,
-    list<
+    >::value,
+    typename list<
         charbox<'B'>,
         charbox<'Q'>,
         charbox<'M'>,
         charbox<'S'>
-    >,
-    list<
+    >::value,
+    typename list<
         charbox<'Q'>,
         charbox<'B'>,
         charbox<'C'>,
@@ -32,8 +32,8 @@ using initial_stacks = list<
         charbox<'Z'>,
         charbox<'G'>,
         charbox<'T'>
-    >,
-    list<
+    >::value,
+    typename list<
         charbox<'S'>,
         charbox<'F'>,
         charbox<'N'>,
@@ -41,8 +41,8 @@ using initial_stacks = list<
         charbox<'M'>,
         charbox<'H'>,
         charbox<'P'>
-    >,
-    list<
+    >::value,
+    typename list<
         charbox<'G'>,
         charbox<'V'>,
         charbox<'L'>,
@@ -51,13 +51,13 @@ using initial_stacks = list<
         charbox<'Q'>,
         charbox<'C'>,
         charbox<'P'>
-    >,
-    list<
+    >::value,
+    typename list<
         charbox<'F'>,
         charbox<'C'>,
         charbox<'W'>
-    >,
-    list<
+    >::value,
+    typename list<
         charbox<'M'>,
         charbox<'P'>,
         charbox<'V'>,
@@ -66,8 +66,8 @@ using initial_stacks = list<
         charbox<'G'>,
         charbox<'H'>,
         charbox<'Q'>
-    >,
-    list<
+    >::value,
+    typename list<
         charbox<'R'>,
         charbox<'N'>,
         charbox<'C'>,
@@ -75,10 +75,10 @@ using initial_stacks = list<
         charbox<'D'>,
         charbox<'Z'>,
         charbox<'G'>
-    >
->;
+    >::value
+>::value;
 
-using moves_list = list<
+using moves_list = typename list<
     move<1, 2, 6>,
     move<3, 7, 9>,
     move<7, 9, 4>,
@@ -582,4 +582,4 @@ using moves_list = list<
     move<1, 5, 4>,
     move<5, 8, 6>,
     move<1, 6, 9>
->;
+>::value;

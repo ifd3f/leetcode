@@ -18,14 +18,14 @@ for l in lines[:i_moves - 1]:
         s.append(char)
 
 stacks_expr = (
-    'list<\n' +
+    'typename list<\n' +
     (',\n'.join([
-        '    list<\n' +
+        '    typename list<\n' +
         (',\n'.join([f"        charbox<'{c}'>" for c in s])) +
-        '\n    >'
+        '\n    >::value'
         for s in stacks
     ])) +
-    '\n>'
+    '\n>::value'
 )
 
 moves = []
@@ -35,9 +35,9 @@ for m in lines[i_moves + 1:]:
     moves.append((n, f, t))
 
 moves_expr = (
-    'list<\n' +
+    'typename list<\n' +
     ',\n'.join([f'    move<{n}, {f}, {t}>' for n, f, t in moves]) +
-    '\n>'
+    '\n>::value'
 )
 
 result = f'''#pragma once

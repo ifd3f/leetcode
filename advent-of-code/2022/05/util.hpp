@@ -4,32 +4,24 @@
 struct nil { };
 
 template <typename _car, typename _cdr>
-struct cons { };
-
-/// Returns the first item of the cons.
-template <typename _cons>
-struct car;
-
-template <typename _car, typename _cdr>
-struct car<cons<_car, _cdr>>
-    : _car { };
-
-/// Returns the second item of the cons.
-template <typename _cons>
-struct cdr;
-
-template <typename _car, typename _cdr>
-struct cdr<cons<_car, _cdr>>
-    : _cdr { };
+struct cons {
+    using car = _car;
+    using cdr = _cdr;
+};
 
 /// Helper to construct a list.
 template <typename... xs>
-struct list
-    : nil { };
+struct list;
+
+template <>
+struct list<> { 
+    using value = nil;
+};
 
 template <typename x, typename... xs>
-struct list<x, xs...>
-    : cons<x, list<xs...>> { };
+struct list<x, xs...> {
+    using value = cons<x, typename list<xs...>::value>;
+};
 
 template <char x>
 struct charbox {
@@ -42,68 +34,80 @@ struct charbox {
 template <int i, typename xs>
 struct get_item;
 
-template <typename x, typename xs>
-struct get_item<0, cons<x, xs>>
-    : x { };
-
 template <int i, typename x, typename xs>
-struct get_item<i, cons<x, xs>>
-    : get_item<i - 1, xs> { };
+struct get_item<i, cons<x, xs>> {
+    using value = typename get_item<i - 1, xs>::value;
+};
+
+template <typename x, typename xs>
+struct get_item<0, cons<x, xs>> {
+    using value = x;
+};
+
+template <int i>
+struct get_item<i, nil>;  // out of bounds
 
 /// Sets the i-th type of the given list to x.
 template <int i, typename x, typename xs>
 struct set_item;
 
 template <typename x, typename h, typename t>
-struct set_item<0, x, cons<h, t>>
-    : cons<x, t> { };
+struct set_item<0, x, cons<h, t>> {
+    using value = cons<x, t>;
+};
 
 template <int i, typename x, typename h, typename t>
-struct set_item<i, x, cons<h, t>>
-    : set_item<i - 1, x, t> { };
+struct set_item<i, x, cons<h, t>> {
+    using value = cons<h, typename set_item<i - 1, x, t>::value>;
+};
 
 template <int i, typename x>
-struct set_item<i, x, nil>
-    : nil { };
+struct set_item<i, x, nil>; // out of bounds
 
 /// Representation of a move.
 template <int n, int from, int to>
 struct move {
     /// Apply this move to a crate stack set.
     template <typename css>
-    struct apply
-        :
-        move<n - 1, from, to>::apply<
-            set_item<
+    struct apply {
+        using value = typename move<n - 1, from, to>::apply<
+            typename set_item<
                 from - 1,
-                cdr<get_item<from - 1, css>>, // tail of [from]
-                set_item<
+                typename get_item<from - 1, css>::value::cdr, // tail of [from]
+                typename set_item<
                     to - 1,
                     cons<
-                        car<get_item<from - 1, css>>, // head of [from]
-                        get_item<to - 1, css> // [to]
+                        typename get_item<from - 1, css>::value::car, // head of [from]
+                        typename get_item<to - 1, css>::value // [to]
                     >,
                     css
-                >
-            >
-        > { };
+                >::value
+            >::value
+        >::value;
+    };
 };
 
 template <int from, int to>
 struct move<0, from, to> {
     template <typename css>
-    struct apply
-        : css { };
+    struct apply {
+        using value = css;
+    };
 };
 
 template <typename css, typename moves_list>
 struct apply_moves;
 
-template <typename css>
-struct apply_moves<css, nil>
-    : css { };
-
 template <typename css, typename h, typename rest>
-struct apply_moves<css, cons<h, rest>>
-    : apply_moves<typename h::apply<css>, rest> { };
+struct apply_moves<css, cons<h, rest>> {
+    using value = typename apply_moves<
+        typename h::apply<css>::value,
+        rest
+    >::value;
+};
+
+template <typename css>
+struct apply_moves<css, nil> {
+    using value = css;
+};
 

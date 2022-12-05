@@ -1,5 +1,5 @@
 soln: soln.cpp util.hpp input.hpp
-	g++ -o $@ soln.cpp
+	g++ -Wall -Werror -o $@ soln.cpp
 
 input.hpp: preprocess.py input
 	./preprocess.py
